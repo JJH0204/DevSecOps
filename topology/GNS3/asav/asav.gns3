@@ -1,0 +1,37 @@
+{
+    "auto_close": true,
+    "auto_open": false,
+    "auto_start": false,
+    "drawing_grid_size": 25,
+    "grid_size": 75,
+    "name": "asav",
+    "project_id": "b41c66ba-bfd8-4548-ae85-f0137eaf14f0",
+    "revision": 9,
+    "scene_height": 1000,
+    "scene_width": 2000,
+    "show_grid": false,
+    "show_interface_labels": false,
+    "show_layers": false,
+    "snap_to_grid": false,
+    "supplier": null,
+    "topology": {
+        "computes": [],
+        "drawings": [
+            {
+                "drawing_id": "98792044-f8ad-4f06-a1b0-b6d5e411e6a5",
+                "locked": false,
+                "rotation": 0,
+                "svg": "<svg width=\"333\" height=\"40\"><text font-family=\"Agency FB\" font-size=\"18.0\" font-weight=\"bold\" fill=\"#000000\" fill-opacity=\"1.0\">ASAv(Adaptive Security Virtual Appliance)</text></svg>",
+                "x": -194,
+                "y": -389,
+                "z": 2
+            }
+        ],
+        "links": [],
+        "nodes": []
+    },
+    "type": "topology",
+    "variables": null,
+    "version": "2.2.49",
+    "zoom": 100
+}

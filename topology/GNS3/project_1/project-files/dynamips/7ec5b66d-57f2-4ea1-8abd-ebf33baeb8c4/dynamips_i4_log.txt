@@ -1,0 +1,47 @@
+Sep 03 17:06:12.349 HYPERVISOR: Release 0.2.17-x86/Windows (tag 2017072410)
+Sep 03 17:06:12.350 HYPERVISOR: Started on IP = localhost, TCP port = 52876.
+Sep 03 17:06:12.837 HYPERVISOR: exec_cmd: hypervisor version 
+Sep 03 17:06:12.838 HYPERVISOR: exec_cmd: hypervisor working_dir C:\JJH\GNS3\saved\project_1\project-files\dynamips 
+Sep 03 17:06:12.838 GENERAL: working_dir=C:\JJH\GNS3\saved\project_1\project-files\dynamips
+Sep 03 17:06:12.838 HYPERVISOR: exec_cmd: hypervisor working_dir C:\JJH\GNS3\saved\project_1\project-files\dynamips\6102841f-a5b7-45de-b5e8-3b74d888fb3f 
+Sep 03 17:06:12.838 GENERAL: working_dir=C:\JJH\GNS3\saved\project_1\project-files\dynamips\6102841f-a5b7-45de-b5e8-3b74d888fb3f
+Sep 03 17:06:12.839 HYPERVISOR: exec_cmd: vm create R2 2 c2691 
+Sep 03 17:06:12.840 VM: VM R2 created.
+Sep 03 17:06:12.840 HYPERVISOR: exec_cmd: vm set_con_tcp_port R2 5026 
+Sep 03 17:06:12.840 HYPERVISOR: exec_cmd: c2691 get_mac_addr R2 
+Sep 03 17:06:12.841 HYPERVISOR: exec_cmd: vm set_disk0 R2 0 
+Sep 03 17:06:12.841 HYPERVISOR: exec_cmd: vm set_exec_area R2 64 
+Sep 03 17:06:12.842 HYPERVISOR: exec_cmd: vm set_ios R2 C:/Users/Administrator/GNS3/images/IOS/C2691-AD.BIN 
+Sep 03 17:06:12.842 HYPERVISOR: exec_cmd: c2691 set_mac_addr R2 c002.2d7c.0000 
+Sep 03 17:06:12.843 HYPERVISOR: exec_cmd: vm set_nvram R2 256 
+Sep 03 17:06:12.843 HYPERVISOR: exec_cmd: vm set_ram R2 192 
+Sep 03 17:06:12.843 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 03 17:06:12.843 HYPERVISOR: exec_cmd: vm slot_add_binding R2 1 0 NM-1FE-TX 
+Sep 03 17:06:12.844 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 03 17:06:12.844 HYPERVISOR: exec_cmd: vm slot_add_binding R2 0 16 WIC-2T 
+Sep 03 17:06:16.795 HYPERVISOR: exec_cmd: nio create_udp udp-0ad3d088-0ab6-4065-ae5c-6c177ffaed18 10028 127.0.0.1 10029 
+Sep 03 17:06:17.058 HYPERVISOR: exec_cmd: vm slot_add_nio_binding R2 0 17 udp-0ad3d088-0ab6-4065-ae5c-6c177ffaed18 
+Sep 03 17:06:17.060 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 03 17:06:17.158 HYPERVISOR: exec_cmd: nio create_udp udp-4c5d8e1d-f540-4f09-945c-7279ce2a55c0 10038 127.0.0.1 10039 
+Sep 03 17:06:17.161 HYPERVISOR: exec_cmd: vm slot_add_nio_binding R2 0 16 udp-4c5d8e1d-f540-4f09-945c-7279ce2a55c0 
+Sep 03 17:06:17.161 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 03 17:06:27.764 HYPERVISOR: exec_cmd: vm set_ghost_status R2 2 
+Sep 03 17:06:27.768 HYPERVISOR: exec_cmd: vm set_ghost_file R2 C:\JJH\GNS3\saved\project_1\project-files\dynamips\C2691-AD.BIN-192.ghost 
+Sep 03 17:06:27.768 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 03 17:06:27.775 HYPERVISOR: exec_cmd: vm set_config R2 configs\i2_startup-config.cfg 
+Sep 03 17:06:27.775 HYPERVISOR: exec_cmd: vm start R2 
+Sep 03 17:41:28.420 HYPERVISOR: exec_cmd: vm extract_config R2 
+Sep 03 17:41:28.431 HYPERVISOR: exec_cmd: vm extract_config R2 
+Sep 03 17:41:49.025 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 03 17:41:49.026 HYPERVISOR: exec_cmd: vm stop R2 
+Sep 03 17:41:49.088 VM: VM R2 shutdown.
+Sep 03 17:41:49.089 HYPERVISOR: exec_cmd: vm extract_config R2 
+Sep 03 17:43:24.908 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 03 17:43:24.908 HYPERVISOR: exec_cmd: vm extract_config R2 
+Sep 03 17:43:25.185 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 03 17:43:25.185 HYPERVISOR: exec_cmd: vm extract_config R2 
+Sep 03 17:43:25.185 HYPERVISOR: exec_cmd: vm delete R2 
+Sep 03 17:43:25.185 VM: VM R2 destroyed.
+Sep 03 17:43:25.189 HYPERVISOR: exec_cmd: hypervisor stop 
+Sep 03 17:43:25.455 HYPERVISOR: Stopped.
+Sep 03 17:43:25.455 GENERAL: reset done.

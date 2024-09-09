@@ -1,0 +1,23 @@
+ C 드라이브의 볼륨: Windows
+ 볼륨 일련 번호: B088-B8B1
+
+ C:\JJH\DevSecOps\resource 디렉터리
+
+2024-09-09  오전 08:39    <DIR>          .
+2024-09-09  오전 08:39    <DIR>          ..
+2020-06-08  오후 09:56       204,865,536 asav992.qcow2
+2007-01-25  오후 12:40        92,296,044 C2691-AD.BIN
+2021-03-15  오후 12:16        90,895,200 C3660-JK.BIN
+2015-12-04  오전 10:42       173,898,845 Cisco Packet Tracer 6.1 for Windows (with tutorials) ? Student version.exe
+2024-08-06  오후 09:12       979,425,280 GNS3 VM.ova
+2024-08-30  오후 02:43       109,360,144 GNS3-2.2.49-all-in-one-regular.exe
+2024-09-05  오전 09:18         5,622,857 JetBrainsMono-2.304.zip
+2024-09-06  오전 09:17     4,313,143,296 kali-linux-2024.2-installer-amd64.iso
+2024-09-02  오전 10:50       765,218,816 pfSense-CE-2.7.0-RELEASE-amd64.iso
+2023-12-07  오전 06:11       874,672,128 pfSense-CE-2.7.2-RELEASE-amd64.iso
+2024-08-26  오전 10:05         1,663,264 putty.exe
+2024-08-26  오전 10:31     1,829,634,048 Rocky-9.4-x86_64-minimal.iso
+2024-08-26  오전 10:28     5,044,094,976 SERVER_EVAL_x64FRE_en-us.iso
+2024-08-26  오전 10:04       110,252,592 VirtualBox-7.0.20-163906-Win.exe
+              14개 파일      14,595,043,026 바이트
+               2개 디렉터리  134,735,327,232 바이트 남음
