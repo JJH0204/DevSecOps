@@ -1,0 +1,16 @@
+Sep 13 12:19:22.307 HYPERVISOR: Release 0.2.17-x86/Windows (tag 2017072410)
+Sep 13 12:19:22.308 HYPERVISOR: Started on IP = localhost, TCP port = 55889.
+Sep 13 12:19:22.541 HYPERVISOR: exec_cmd: hypervisor version 
+Sep 13 12:19:22.541 HYPERVISOR: exec_cmd: hypervisor working_dir C:\JJH\DevSecOps\topology\GNS3\NetSec_Portfolio\project-files\dynamips 
+Sep 13 12:19:22.546 GENERAL: working_dir=C:\JJH\DevSecOps\topology\GNS3\NetSec_Portfolio\project-files\dynamips
+Sep 13 12:19:22.546 HYPERVISOR: exec_cmd: ethsw create SW4 
+Sep 13 12:19:26.195 HYPERVISOR: exec_cmd: nio create_udp udp-a9795304-9ee7-4ef9-8f26-ccf4b5958ec2 10000 172.16.42.128 20000 
+Sep 13 12:19:26.196 HYPERVISOR: exec_cmd: ethsw add_nio SW4 udp-a9795304-9ee7-4ef9-8f26-ccf4b5958ec2 
+Sep 13 12:19:26.216 HYPERVISOR: exec_cmd: ethsw set_access_port SW4 udp-a9795304-9ee7-4ef9-8f26-ccf4b5958ec2 1 
+Sep 13 12:19:27.904 HYPERVISOR: exec_cmd: nio create_udp udp-cdf3c2a2-1c02-4915-8970-f3ec6d74643d 10037 172.16.153.128 20007 
+Sep 13 12:19:27.904 HYPERVISOR: exec_cmd: ethsw add_nio SW4 udp-cdf3c2a2-1c02-4915-8970-f3ec6d74643d 
+Sep 13 12:19:27.912 HYPERVISOR: exec_cmd: ethsw set_access_port SW4 udp-cdf3c2a2-1c02-4915-8970-f3ec6d74643d 1 
+Sep 13 13:34:19.215 HYPERVISOR: exec_cmd: ethsw delete SW4 
+Sep 13 13:34:19.251 HYPERVISOR: exec_cmd: hypervisor stop 
+Sep 13 13:34:19.539 HYPERVISOR: Stopped.
+Sep 13 13:34:19.539 GENERAL: reset done.

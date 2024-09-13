@@ -1,0 +1,2 @@
+set pcname HIDS-ossec
+ip 172.16.64.3 172.16.95.254 19

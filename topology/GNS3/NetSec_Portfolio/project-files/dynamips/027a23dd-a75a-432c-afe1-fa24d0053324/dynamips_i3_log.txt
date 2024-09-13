@@ -1,0 +1,43 @@
+Sep 13 12:19:23.229 HYPERVISOR: Release 0.2.17-x86/Windows (tag 2017072410)
+Sep 13 12:19:23.230 HYPERVISOR: Started on IP = localhost, TCP port = 55896.
+Sep 13 12:19:23.719 HYPERVISOR: exec_cmd: hypervisor version 
+Sep 13 12:19:23.721 HYPERVISOR: exec_cmd: hypervisor working_dir C:\JJH\DevSecOps\topology\GNS3\NetSec_Portfolio\project-files\dynamips 
+Sep 13 12:19:23.722 GENERAL: working_dir=C:\JJH\DevSecOps\topology\GNS3\NetSec_Portfolio\project-files\dynamips
+Sep 13 12:19:23.723 HYPERVISOR: exec_cmd: hypervisor working_dir C:\JJH\DevSecOps\topology\GNS3\NetSec_Portfolio\project-files\dynamips\5dd341a9-48b3-4ccf-839a-bcc84d8b1384 
+Sep 13 12:19:23.724 GENERAL: working_dir=C:\JJH\DevSecOps\topology\GNS3\NetSec_Portfolio\project-files\dynamips\5dd341a9-48b3-4ccf-839a-bcc84d8b1384
+Sep 13 12:19:23.725 HYPERVISOR: exec_cmd: vm create R2 2 c2691 
+Sep 13 12:19:23.729 VM: VM R2 created.
+Sep 13 12:19:23.731 HYPERVISOR: exec_cmd: vm set_con_tcp_port R2 5004 
+Sep 13 12:19:23.732 HYPERVISOR: exec_cmd: c2691 get_mac_addr R2 
+Sep 13 12:19:23.734 HYPERVISOR: exec_cmd: vm set_disk0 R2 0 
+Sep 13 12:19:23.736 HYPERVISOR: exec_cmd: vm set_exec_area R2 64 
+Sep 13 12:19:23.739 HYPERVISOR: exec_cmd: vm set_ios R2 C:/Users/Administrator/GNS3/images/IOS/C2691-AD.BIN 
+Sep 13 12:19:23.739 HYPERVISOR: exec_cmd: c2691 set_mac_addr R2 c002.1dd8.0000 
+Sep 13 12:19:23.740 HYPERVISOR: exec_cmd: vm set_nvram R2 256 
+Sep 13 12:19:23.740 HYPERVISOR: exec_cmd: vm set_ram R2 192 
+Sep 13 12:19:23.740 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 13 12:19:23.740 HYPERVISOR: exec_cmd: vm slot_add_binding R2 1 0 NM-1FE-TX 
+Sep 13 12:19:23.741 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 13 12:19:23.741 HYPERVISOR: exec_cmd: vm slot_add_binding R2 0 16 WIC-2T 
+Sep 13 12:19:26.627 HYPERVISOR: exec_cmd: nio create_udp udp-45c4bb99-97c4-4ae2-9b17-c63d14edd71d 10010 127.0.0.1 10011 
+Sep 13 12:19:26.880 HYPERVISOR: exec_cmd: vm slot_add_nio_binding R2 0 0 udp-45c4bb99-97c4-4ae2-9b17-c63d14edd71d 
+Sep 13 12:19:26.882 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 13 12:19:26.936 HYPERVISOR: exec_cmd: nio create_udp udp-1e52489f-3266-4bf3-964b-7ff79b19b040 10013 127.0.0.1 10014 
+Sep 13 12:19:26.939 HYPERVISOR: exec_cmd: vm slot_add_nio_binding R2 0 1 udp-1e52489f-3266-4bf3-964b-7ff79b19b040 
+Sep 13 12:19:26.939 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 13 12:19:39.215 HYPERVISOR: exec_cmd: vm set_ghost_status R2 2 
+Sep 13 12:19:39.215 HYPERVISOR: exec_cmd: vm set_ghost_file R2 C:\JJH\DevSecOps\topology\GNS3\NetSec_Portfolio\project-files\dynamips\C2691-AD.BIN-192.ghost 
+Sep 13 12:19:39.216 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 13 12:19:39.221 HYPERVISOR: exec_cmd: vm set_config R2 configs\i2_startup-config.cfg 
+Sep 13 12:19:39.222 HYPERVISOR: exec_cmd: vm start R2 
+Sep 13 13:34:17.596 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 13 13:34:17.597 HYPERVISOR: exec_cmd: vm stop R2 
+Sep 13 13:34:17.909 VM: VM R2 shutdown.
+Sep 13 13:34:17.910 HYPERVISOR: exec_cmd: vm extract_config R2 
+Sep 13 13:34:19.575 HYPERVISOR: exec_cmd: vm get_status R2 
+Sep 13 13:34:19.575 HYPERVISOR: exec_cmd: vm extract_config R2 
+Sep 13 13:34:19.577 HYPERVISOR: exec_cmd: vm delete R2 
+Sep 13 13:34:19.577 VM: VM R2 destroyed.
+Sep 13 13:34:19.578 HYPERVISOR: exec_cmd: hypervisor stop 
+Sep 13 13:34:20.056 HYPERVISOR: Stopped.
+Sep 13 13:34:20.056 GENERAL: reset done.

@@ -1,0 +1,2 @@
+set pcname Suricata
+ip 172.16.64.2 172.16.95.254 19
