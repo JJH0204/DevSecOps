@@ -498,15 +498,18 @@ U_06()
     fi
 
     # 최종 취약 여부 확인
-    local i=0
-    while [ $i -lt ${#detail[@]} ]; do
-        if [[ $detail[$i+1] == "취약" ]]; then
-            print_array_elements "${detail[@]}" ## TODO: 최종 취약 여부 종합 결과 계산 안됨 확인 필요
-            total_result="취약"
-        fi
-        # 인덱스를 세 개씩 증가시켜 다음 항목으로 이동
-        i=$((i+3))
-    done
+    # local i=0
+    # while [ $i -lt ${#detail[@]} ]; do
+    #     if [[ $detail[$i+1] == "취약" ]]; then
+    #         print_array_elements "${detail[@]}" ## TODO: 최종 취약 여부 종합 결과 계산 안됨 확인 필요
+    #         total_result="취약"
+    #     fi
+    #     # 인덱스를 세 개씩 증가시켜 다음 항목으로 이동
+    #     i=$((i+3))
+    # done
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
 
     # 함수 실행 예시
     result_print "U_06" "$desc" "$total_result" "${detail[@]}"
