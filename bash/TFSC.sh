@@ -48,6 +48,7 @@ result_print() {
     echo "=========================================================="
 }
 
+: << "END"
 U_09()
 {
     # 점검 코드 실행
@@ -316,6 +317,7 @@ U_17()
     # 함수 실행 예시
     result_print $code "$desc" "$total_result" $detail_1 "$detail_1_result" "$detail_1_order"
 }
+END
 
 # U_50()
 # {
@@ -403,19 +405,111 @@ U_05()
     result_print "U_05" "$desc" "$total_result" "${detail[@]}" #result $order
 }
 
+# 중복 검사 함수
+is_in_array()
+{
+    local element="$1"
+    shift
+    local array=("$@")
+    
+    for item in "${array[@]}"; do
+        if [[ "$item" == "$element" ]]; then
+            return 0  # 배열에 값이 있으면 true (0) 반환
+        fi
+    done
+    return 1  # 값이 없으면 false (1) 반환
+}
+
+# 배열을 순차적으로 출력하는 함수
+print_array_elements() {
+    local array=("$@")  # 모든 인자를 배열로 받음
+    local length=${#array[@]}  # 배열의 길이
+
+    # 배열의 각 요소를 0부터 마지막까지 출력
+    for ((i = 0; i < length; i++)); do
+        echo "Element $i: ${array[$i]}"
+    done
+}
+
 # 파일 및 디렉터리 소유자 설정
 # 소유자가 존재하지 않는 파일과 동일한 UID로 설정을 바꾸게 되면 해당 파일의 소유권한을 갖게된다.
 U_06()   
 {
-    #변수 선언
     desc="파일 및 디렉터리 소유자 설정"
     detail=()
     total_result="양호"
 
-    find_nouser=(`find / -nouser`)
-    echo "${#find_nouser[0]}"
+    find_nouser=($(find / -nouser 2>/dev/null)) # 소유자가 없는 파일 조사
+    find_nogroup=($(find / -nogroup 2>/dev/null)) # 소유그룹이 없는 파일 조사
 
+    # UID 검사
+    detail+=("UID")
+    if [ ${#find_nouser[@]} -eq 0 ]; then
+        detail+=("양호")
+        detail+=("-")
+    else
+        detail+=("취약")
+        _UID_result=""
+        _UIDs=()
 
+        for user in "${find_nouser[@]}"; do
+            _UID=$(ls -l "$user" | awk '{print $3}') # 찾은 파일의 _UID 값 임시 저장
+
+            # 이미 저장한 _UID 값 저장하지 않는다.
+            if ! is_in_array "$_UID" "${_UIDs[@]}"; then
+                _UIDs+=("$_UID")
+            fi
+        done
+
+        #결과값을 문자열로 저장
+        for name in "${_UIDs[@]}"; do
+            _UID_result+="$name/"
+        done
+
+        detail+=("$_UID_result")
+    fi
+
+    # GID 검사
+    detail+=("GID")
+    if [ ${#find_nogroup[@]} -eq 0 ]; then
+        detail+=("양호")
+        detail+=("-")
+
+    else
+        detail+=("취약")
+        result=""
+        _GIDs=()
+
+        for group in "${find_nogroup[@]}"; do
+            _GID=$(ls -l "$group" | awk '{print $4}') # 찾은 파일의 _GID 값 임시 저장
+
+            # 이미 저장한 _GID 값 저장하지 않는다.
+            if ! is_in_array "$_GID" "${_GIDs[@]}"; then
+                _GIDs+=("$_GID")
+            fi
+        done
+
+        #결과 값 저장
+        for group in "${_GIDs[@]}"; do
+            result+="$group/"
+        done
+        detail+=("$result")
+        # echo "$find_nogroup" | cut -d'/' -f3 | sort -u
+    fi
+
+    # 최종 취약 여부 확인
+    local i=0
+    while [ $i -lt ${#detail[@]} ]; do
+        if [[ $detail[$i+1] == "취약" ]]; then
+            print_array_elements "${detail[@]}" ## TODO: 최종 취약 여부 종합 결과 계산 안됨 확인 필요
+            total_result="취약"
+        fi
+        # 인덱스를 세 개씩 증가시켜 다음 항목으로 이동
+        i=$((i+3))
+    done
+
+    # 함수 실행 예시
+    result_print "U_06" "$desc" "$total_result" "${detail[@]}"
 }
 
 # U_07()
@@ -467,7 +561,7 @@ main()
     # U_50; U_51; U_52; U_53; U_54
     U_05; U_06 #; U_07; U_08 정재호
     
-    U_09; U_10; U_11; U_12; U_13; U_14; U_15; U_17 # 장진영씨
+    # U_09; U_10; U_11; U_12; U_13; U_14; U_15; U_17 # 장진영씨
     
     ######################################
     echo

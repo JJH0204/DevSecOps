@@ -1,0 +1,28 @@
+Sep 09 19:28:49.572 HYPERVISOR: Release 0.2.17-x86/Windows (tag 2017072410)
+Sep 09 19:28:49.574 HYPERVISOR: Started on IP = localhost, TCP port = 64346.
+Sep 09 19:28:49.773 HYPERVISOR: exec_cmd: hypervisor version 
+Sep 09 19:28:49.774 HYPERVISOR: exec_cmd: hypervisor working_dir E:\Document\GitHub\DevSecOps\topology\GNS3\project_pf_asav\project-files\dynamips 
+Sep 09 19:28:49.823 GENERAL: working_dir=E:\Document\GitHub\DevSecOps\topology\GNS3\project_pf_asav\project-files\dynamips
+Sep 09 19:28:49.823 HYPERVISOR: exec_cmd: hypervisor working_dir E:\Document\GitHub\DevSecOps\topology\GNS3\project_pf_asav\project-files\dynamips\56a3283e-907a-49df-a3e5-ff5515509fac 
+Sep 09 19:28:49.823 GENERAL: working_dir=E:\Document\GitHub\DevSecOps\topology\GNS3\project_pf_asav\project-files\dynamips\56a3283e-907a-49df-a3e5-ff5515509fac
+Sep 09 19:28:49.824 HYPERVISOR: exec_cmd: vm create R1 1 c2691 
+Sep 09 19:28:49.825 VM: VM R1 created.
+Sep 09 19:28:49.825 HYPERVISOR: exec_cmd: vm set_con_tcp_port R1 5012 
+Sep 09 19:28:49.826 HYPERVISOR: exec_cmd: c2691 get_mac_addr R1 
+Sep 09 19:28:49.826 HYPERVISOR: exec_cmd: vm set_disk0 R1 0 
+Sep 09 19:28:49.826 HYPERVISOR: exec_cmd: vm set_exec_area R1 64 
+Sep 09 19:28:49.829 HYPERVISOR: exec_cmd: vm set_ios R1 C:/Users/jhjy5/GNS3/images/IOS/C2691-AD.BIN 
+Sep 09 19:28:49.829 HYPERVISOR: exec_cmd: c2691 set_mac_addr R1 c001.3374.0000 
+Sep 09 19:28:49.830 HYPERVISOR: exec_cmd: vm set_nvram R1 256 
+Sep 09 19:28:49.830 HYPERVISOR: exec_cmd: vm set_ram R1 192 
+Sep 09 19:28:49.831 HYPERVISOR: exec_cmd: vm get_status R1 
+Sep 09 19:28:49.831 HYPERVISOR: exec_cmd: vm slot_add_binding R1 1 0 NM-1FE-TX 
+Sep 09 19:28:49.832 HYPERVISOR: exec_cmd: vm get_status R1 
+Sep 09 19:28:49.832 HYPERVISOR: exec_cmd: vm slot_add_binding R1 0 16 WIC-2T 
+Sep 09 19:31:17.454 HYPERVISOR: exec_cmd: vm get_status R1 
+Sep 09 19:31:17.457 HYPERVISOR: exec_cmd: vm extract_config R1 
+Sep 09 19:31:17.461 HYPERVISOR: exec_cmd: vm delete R1 
+Sep 09 19:31:17.461 VM: VM R1 destroyed.
+Sep 09 19:31:17.503 HYPERVISOR: exec_cmd: hypervisor stop 
+Sep 09 19:31:17.911 HYPERVISOR: Stopped.
+Sep 09 19:31:17.911 GENERAL: reset done.
