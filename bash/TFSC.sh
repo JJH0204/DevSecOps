@@ -412,23 +412,231 @@ U_51()
     # 그룹 설정 파일에 불필요한 그룹
         # 1. 계정이 없고 관리에 사용되지 않는 그룹
         # 2. 계정은 있지만 관리에 사용되지 않는 그룹
-        # 
+    # gshadow_name=$(cat /etc/gshadow | cut -d':' -f1)
+    # group_name=$(cat /etc/group | cut -d':' -f1)
+
+    # duplication_name=$(comm -3 $(echo ${gshadow_name}) $(echo ${group_name}))
+    # echo "${duplication_name}"
+    desc="계정이 존재하지 않는 GID 금지"
+    detail=()
+    total_result="양호"
+
+    # gshadow와 group 파일에서 그룹 이름 추출
+    gshadow_name=$(cut -d':' -f1 /etc/gshadow)
+    group_name=$(cut -d':' -f1 /etc/group)
+    # 사용중인 GID 모두 추출
+    used_GID=$(cut -d':' -f4 /etc/passwd)
+    # 모든 GID 리스트
+    GID_list=$(cut -d':' -f3 /etc/group)
+
+
+    # gshadow와 group 이름을 배열로 변환
+    gshadow_array=(${gshadow_name})
+    group_array=(${group_name})
+
+    # 중복되지 않은 그룹 이름을 찾기 위한 배열 비교
+    # gshadow 배열에서 group 배열에 없는 항목 출력
+    detail+=("gshadow에만 있는 그룹")
+    gshadow_state="양호"
+    gshadow_gname=()
+    for gname in "${gshadow_array[@]}"; do
+        if [[ ! " ${group_array[@]} " =~ " ${gname} " ]]; then
+            gshadow_state="취약"
+            gshadow_gname+=("$gname")
+        fi
+    done
+    # gshadow_comm="$gshadow_gname 그룹들을 점검하시오."
+    if [[ ${gshadow_state} == "취약" ]]; then
+        gshadow_comm="${gshadow_gname} 그룹들을 점검하시오."
+    else
+        gshadow_comm="-"
+    fi
+
+
+    detail+=("${gshadow_state}")
+    detail+=("${gshadow_comm}")
+
+    # group 배열에서 gshadow 배열에 없는 항목 출력
+    # echo "group에만 있는 그룹:"
+    detail+=("group에만 있는 그룹")
+    group_state="양호"
+    group_gname=()
+
+    for gname in "${group_array[@]}"; do
+        if [[ ! " ${gshadow_array[@]} " =~ " ${gname} " ]]; then
+            group_state="취약"
+            group_gname+=("$gname")
+        fi
+    done
+    # 
+    if [[ ${group_state} == "취약" ]]; then
+        group_comm="${group_gname} 그룹들을 점검하시오."
+    else
+        group_comm="-"
+    fi
+
+    detail+=("${group_state}")
+    detail+=("${group_comm}")
+
+    ###########################################################
+    used_GID_array=(${used_GID})
+    GID_array=(${GID_list})
+
+    detail+=("사용중이지 않는 GID")
+    GID_state="양호"
+    GID_check_list=()
+
+    for _GID_ in "${GID_array[@]}"; do
+        found=0  # GID가 사용 중인 배열에 있는지 여부를 나타내는 플래그
+        for used_GID in "${used_GID_array[@]}"; do
+            if [[ "$used_GID" -eq "$_GID_" ]]; then
+                found=1
+                break
+            fi
+        done
+
+        # GID가 used_GID_array에 없으면 취약으로 설정
+        if [[ $found -eq 0 ]]; then
+            GID_state="취약"
+            # GID_check_list+=("$_GID_")  # GID_check_list에 해당 GID 추가
+        fi
+    done
+
+    if [[ ${GID_state} == "취약" ]]; then
+        GID_comm="/etc/group의 사용중이지 않는 GID를 점검하시오."
+    else
+        GID_comm="-"
+    fi
+
+    detail+=("${GID_state}")
+    detail+=("${GID_comm}")
+
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 함수 실행 예시
+    result_print "U_51" "$desc" "$total_result" "${detail[@]}" #result $order
 }
 
-# U_52()
-# {
-#     # 동일한 GID 금지
-# }
+U_52()
+{
+    desc="동일한 UID 금지"
+    detail=()
+    total_result="양호"
 
-# U_53()
-# {
-#     # 사용자 shell 점검
-# }
+    duplicate_UID=$(cut -d':' -f3 /etc/passwd | sort | uniq -d)
 
-# U_54()
-# {
-#     # Session Timeout 설정
-# }
+    detail+=("UID 중복 사용 금지")
+
+    # 변수에 값이 있는지 확인
+    if [[ -z "$duplicate_UID" ]]; then
+        detail+=("양호")
+        detail+=("-")
+    else
+        detail+=("취약")
+        detail+=("중복 사용 된 UID: $duplicate_UID")
+    fi
+    
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    result_print "U_52" "$desc" "$total_result" "${detail[@]}" #result $order
+}
+
+U_53()
+{
+    # 사용자 shell 점검
+    desc="사용자 shell 점검"
+    detail=()
+    total_result="양호"
+
+    no_use_data=$(grep -E "^(daemon|bin|sys|adm|listen|nobody|nobody4|noaccess|diag|operator|games|gopher)" /etc/passwd | grep -v "admin")
+
+    while IFS=: read -r name _ _ _ _ _ shell; do
+        
+        detail+=("$name")
+        
+        # 쉘이 /bin/false 또는 /sbin/nologin인지 검사
+        if [[ "$shell" == "/bin/false" || "$shell" == "/sbin/nologin" ]]; then
+            detail+=("양호")
+            detail+=("-")
+        else
+            detail+=("취약")
+            detail+=("계정에 /bin/false(/sbin/nologin) 쉘이 부여되지 않았습니다.")
+        fi
+    done <<< "$no_use_data"
+
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    result_print "U_53" "$desc" "$total_result" "${detail[@]}" #result $order
+}
+
+U_54()
+{
+    # Session Timeout 설정
+    desc="사용자 shell 점검"
+    detail=()
+    total_result="양호"
+
+# TMOUT 설정이 작성되어 있는지
+    TMOUT_set=$(cat /etc/profile | grep TMOUT)
+
+    detail+=("session timeout 설정 여부")
+    if [[ "$TMOUT_set" == "" ]]; then
+        detail+=("취약")
+        detail+=("Session Timeout 설정을 추가하십시오.")
+    else
+        detail+=("양호")
+        detail+=("-")
+
+# TMOUT 설정값이 600인지
+        detail+=("session timeout 설정 값")
+        TMOUT_value=$(echo "$TMOUT_set" | grep -Eo 'TMOUT=[0-9]+' | cut -d'=' -f2)
+
+        # TMOUT_value가 숫자인지 확인
+        if [[ "$TMOUT_value" =~ ^[0-9]+$ ]]; then
+            if [[ "$TMOUT_value" -gt 600 ]]; then
+                detail+=("취약")
+                detail+=("Session Timeout 값을 600 이하로 설정하십시오.")
+            else
+                detail+=("양호")
+                detail+=("-")
+            fi
+        else
+            detail+=("취약")
+            detail+=("Session Timeout 값이 잘못 설정되었습니다.")
+        fi
+
+        # if [[ "$TMOUT_value" -gt 600 ]]; then
+        #     detail+=("취약")
+        #     detail+=("Session Timeout 값을 600이하로 설정하십시오.")
+        # else
+        #     detail+=("양호")
+        #     detail+=("-")
+        # fi
+
+# export TMOUT 가 작성되어 있는지
+        detail+=("session timeout 적용 여부")
+        TMOUT_export=$(cat /etc/profile | grep 'export TMOUT')
+        if [[ "$TMOUT_export" == "" ]]; then
+            detail+=("취약")
+            detail+=("export TMOUT 명령어로 session timeout을 적용하세요.")
+        else
+            detail+=("양호")
+            detail+=("-")
+        fi
+    fi
+
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    result_print "U_54" "$desc" "$total_result" "${detail[@]}" #result $order
+}
 
 U_05()
 {
@@ -560,16 +768,6 @@ U_06()
         # echo "$find_nogroup" | cut -d'/' -f3 | sort -u
     fi
 
-    # 최종 취약 여부 확인
-    # local i=0
-    # while [ $i -lt ${#detail[@]} ]; do
-    #     if [[ $detail[$i+1] == "취약" ]]; then
-    #         print_array_elements "${detail[@]}" ## TODO: 최종 취약 여부 종합 결과 계산 안됨 확인 필요
-    #         total_result="취약"
-    #     fi
-    #     # 인덱스를 세 개씩 증가시켜 다음 항목으로 이동
-    #     i=$((i+3))
-    # done
     if is_in_array "취약" "${detail[@]}"; then
         total_result="취약"
     fi
@@ -694,10 +892,9 @@ main()
     echo
     #####검사 함수 실행####################
     
-    U_50 #; U_51; U_52; U_53; U_54
-    U_05; U_06; U_07; U_08 # 정재호
+    U_50; U_51; U_52; U_53; U_54; U_05; U_06; U_07; U_08 # 정재호
     
-    # U_09; U_10; U_11; U_12; U_13; U_14; U_15; U_17 # 장진영씨
+    U_09; U_10; U_11; U_12; U_13; U_14; U_15; U_17 # 장진영씨
     
     ######################################
     echo
