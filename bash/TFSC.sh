@@ -704,75 +704,54 @@ U_05()
 
 # 파일 및 디렉터리 소유자 설정
 # 소유자가 존재하지 않는 파일과 동일한 UID로 설정을 바꾸게 되면 해당 파일의 소유권한을 갖게된다.
-U_06()   
-{
+U_06() {
     desc="파일 및 디렉터리 소유자 설정"
     detail=()
     total_result="양호"
 
-    find_nouser=($(find / -nouser 2>/dev/null)) # 소유자가 없는 파일 조사
-    find_nogroup=($(find / -nogroup 2>/dev/null)) # 소유그룹이 없는 파일 조사
+    find_nouser=$(find / -nouser 2>/dev/null) # 소유자가 없는 파일 조사
+    find_nogroup=$(find / -nogroup 2>/dev/null) # 소유 그룹이 없는 파일 조사
 
-    # UID 검사
-    detail+=("UID")
-    if [ ${#find_nouser[@]} -eq 0 ]; then
-        detail+=("양호")
-        detail+=("-")
-    else
-        detail+=("취약")
-        _UID_result=""
-        _UIDs=()
+    check_result() {
+        local type=$1
+        local items=$2
+        local index_field=$3
+        local result_title=$4
 
-        for user in "${find_nouser[@]}"; do
-            _UID=$(ls -l "$user" | awk '{print $3}') # 찾은 파일의 _UID 값 임시 저장
+        detail+=("$type")
+        
+        if [ -z "$items" ]; then
+            detail+=("양호")
+            detail+=("-")
+        else
+            detail+=("취약")
+            _ids=()
 
-            # 이미 저장한 _UID 값 저장하지 않는다.
-            if ! is_in_array "$_UID" "${_UIDs[@]}"; then
-                _UIDs+=("$_UID")
-            fi
-        done
+            # 소유자나 그룹 ID를 추출하여 중복 없이 저장
+            while read -r item; do
+                _id=$(ls -l "$item" | awk "{print \$$index_field}")
+                if [[ ! " ${_ids[@]} " =~ " $_id " ]]; then
+                    _ids+=("$_id")
+                fi
+            done <<< "$items"
 
-        #결과값을 문자열로 저장
-        for name in "${_UIDs[@]}"; do
-            _UID_result+="$name/"
-        done
+            # 결과 저장
+            detail+=("$(IFS=/; echo "${_ids[*]}"), $result_title")
+        fi
+    }
 
-        detail+=("$_UID_result, 사용자 점검")
-    fi
+    # UID 검사 (3번째 필드가 소유자)
+    check_result "UID" "$find_nouser" 3 "사용자 점검"
+    
+    # GID 검사 (4번째 필드가 그룹)
+    check_result "GID" "$find_nogroup" 4 "그룹 번호 점검"
 
-    # GID 검사
-    detail+=("GID")
-    if [ ${#find_nogroup[@]} -eq 0 ]; then
-        detail+=("양호")
-        detail+=("-")
-
-    else
-        detail+=("취약")
-        result=""
-        _GIDs=()
-
-        for group in "${find_nogroup[@]}"; do
-            _GID=$(ls -l "$group" | awk '{print $4}') # 찾은 파일의 _GID 값 임시 저장
-
-            # 이미 저장한 _GID 값 저장하지 않는다.
-            if ! is_in_array "$_GID" "${_GIDs[@]}"; then
-                _GIDs+=("$_GID")
-            fi
-        done
-
-        #결과 값 저장
-        for group in "${_GIDs[@]}"; do
-            result+="$group/"
-        done
-        detail+=("$result, 그룹 번호 점검")
-        # echo "$find_nogroup" | cut -d'/' -f3 | sort -u
-    fi
-
-    if is_in_array "취약" "${detail[@]}"; then
+    # 총 결과 확인
+    if [[ " ${detail[@]} " =~ " 취약 " ]]; then
         total_result="취약"
     fi
 
-    # 함수 실행 예시
+    # 결과 출력
     result_print "U_06" "$desc" "$total_result" "${detail[@]}"
 }
 
