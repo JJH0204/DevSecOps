@@ -48,7 +48,69 @@ result_print() {
     echo "=========================================================="
 }
 
-: << "END"
+# 중복 검사 함수
+is_in_array()
+{
+    local element="$1"
+    shift
+    local array=("$@")
+    
+    for item in "${array[@]}"; do
+        if [[ "$item" == "$element" ]]; then
+            return 0  # 배열에 값이 있으면 true (0) 반환
+        fi
+    done
+    return 1  # 값이 없으면 false (1) 반환
+}
+
+# 배열을 순차적으로 출력하는 함수
+print_array_elements()
+{
+    local array=("$@")  # 모든 인자를 배열로 받음
+    local length=${#array[@]}  # 배열의 길이
+
+    # 배열의 각 요소를 0부터 마지막까지 출력
+    for ((i = 0; i < length; i++)); do
+        echo "Element $i: ${array[$i]}"
+    done
+}
+
+get_permission()
+{
+    index=${1}
+    search_as=${2}
+    string=${3}
+
+    permission=0
+    for (( i=${index}; i<=${search_as}; i++ )); do
+        char="${string:$i:1}"
+        if [[ "$char" == "r" ]]; then
+            permission=$((permission + 4))
+        elif [[ "$char" == "w" ]]; then
+            permission=$((permission + 2))
+        elif [[ "$char" == "x" ]]; then
+            permission=$((permission + 1))
+        else
+            permission=$((permission + 0))
+        fi
+    done
+
+    echo ${permission}
+}
+
+get_permission_result()
+{
+    permission=${1}
+    # echo "${permission}"
+    result=0
+
+    result=$((result + $(get_permission 1 3 "${permission}") * 100))
+    result=$((result + $(get_permission 4 6 "${permission}") * 10))
+    result=$((result + $(get_permission 7 9 "${permission}")))
+
+    echo ${result}
+}
+
 U_09()
 {
     # 점검 코드 실행
@@ -317,17 +379,41 @@ U_17()
     # 함수 실행 예시
     result_print $code "$desc" "$total_result" $detail_1 "$detail_1_result" "$detail_1_order"
 }
-END
 
-# U_50()
-# {
-#     # 관리자 그룹에 최소한의 계정 포함
-# }
+U_50()
+{
+    desc="관리자 그룹에 최소한의 계정 포함"
+    detail=()
+    total_result="양호"
 
-# U_51()
-# {
-#     # 계정이 존재하지 않는 GID 금지
-# }
+    
+    group_value=$(cat /etc/group | grep root | sed 's/root:x:0://')
+
+    detail+=("Root Privileges Users")
+    if echo "$group_value" | awk -F', ' '{for(i=1;i<=NF;i++) if($i != "root") exit 1}'; then
+        detail+=("양호")
+        detail+=("-")
+    else
+        detail+=("취약")
+        detail+=("/etc/group 의 설정 파일 점검")
+    fi
+
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 함수 실행 예시
+    result_print "U_50" "$desc" "$total_result" "${detail[@]}" #result $order
+}
+
+U_51()
+{
+    # 계정이 존재하지 않는 GID 금지
+    # 그룹 설정 파일에 불필요한 그룹
+        # 1. 계정이 없고 관리에 사용되지 않는 그룹
+        # 2. 계정은 있지만 관리에 사용되지 않는 그룹
+        # 
+}
 
 # U_52()
 # {
@@ -392,43 +478,20 @@ U_05()
     done
 
     # 최종 취약 여부 확인
-    local i=2
-    while [ $i -lt ${#detail[@]} ]; do
-        if [[ $detail[$i] == "취약" ]]; then
-            total_result="취약"
-        fi
-        # 인덱스를 세 개씩 증가시켜 다음 항목으로 이동
-        i=$((i+3))
-    done
+    # local i=2
+    # while [ $i -lt ${#detail[@]} ]; do
+    #     if [[ $detail[$i] == "취약" ]]; then
+    #         total_result="취약"
+    #     fi
+    #     # 인덱스를 세 개씩 증가시켜 다음 항목으로 이동
+    #     i=$((i+3))
+    # done
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
 
     # 함수 실행 예시
     result_print "U_05" "$desc" "$total_result" "${detail[@]}" #result $order
-}
-
-# 중복 검사 함수
-is_in_array()
-{
-    local element="$1"
-    shift
-    local array=("$@")
-    
-    for item in "${array[@]}"; do
-        if [[ "$item" == "$element" ]]; then
-            return 0  # 배열에 값이 있으면 true (0) 반환
-        fi
-    done
-    return 1  # 값이 없으면 false (1) 반환
-}
-
-# 배열을 순차적으로 출력하는 함수
-print_array_elements() {
-    local array=("$@")  # 모든 인자를 배열로 받음
-    local length=${#array[@]}  # 배열의 길이
-
-    # 배열의 각 요소를 0부터 마지막까지 출력
-    for ((i = 0; i < length; i++)); do
-        echo "Element $i: ${array[$i]}"
-    done
 }
 
 # 파일 및 디렉터리 소유자 설정
@@ -466,7 +529,7 @@ U_06()
             _UID_result+="$name/"
         done
 
-        detail+=("$_UID_result")
+        detail+=("$_UID_result, 사용자 점검")
     fi
 
     # GID 검사
@@ -493,7 +556,7 @@ U_06()
         for group in "${_GIDs[@]}"; do
             result+="$group/"
         done
-        detail+=("$result")
+        detail+=("$result, 그룹 번호 점검")
         # echo "$find_nogroup" | cut -d'/' -f3 | sort -u
     fi
 
@@ -515,15 +578,85 @@ U_06()
     result_print "U_06" "$desc" "$total_result" "${detail[@]}"
 }
 
-# U_07()
-# {
-#     # /etc/passwd 파일 소유자 및 권한 설정
-# }
+U_07()
+{
+    desc="/etc/passwd 파일 소유자 및 권한 설정"
+    detail=()
+    total_result="양호"
+    permission=($(ls -l /etc/passwd | awk '{print $1}'))
+    owner=($(ls -l /etc/passwd | awk '{print $3}'))
 
-# U_08()
-# {
-#     # /etc/shadow 파일 소유자 및 권한 설정
-# }
+    # echo "$permission" "$owner"
+    # permission 값
+    permission_value=($(get_permission_result "${permission}"))
+
+    # echo "${permission_valu}"
+    detail+=("Permission")
+    # permission_value 값이 644 보다 크면?
+    if ! [[ ${permission_value} -le 644 ]]; then
+        detail+=("취약")
+        detail+=("/etc/passwd 퍼미션 점검")
+    else
+        detail+=("양호")
+        detail+=("-")
+    fi
+
+    detail+=("Owner")
+    # owner 가 root가 아니면
+    if [ ${owner} != "root" ]; then
+        detail+=("취약")
+        detail+=("/etc/passwd 소유자 점검")
+    else
+        detail+=("양호")
+        detail+=("-")
+    fi
+
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    result_print "U_07" "$desc" "$total_result" "${detail[@]}"
+}
+
+U_08()
+{
+    desc="/etc/shadow 파일 소유자 및 권한 설정"
+    detail=()
+    total_result="양호"
+    permission=($(ls -l /etc/shadow | awk '{print $1}'))
+    owner=($(ls -l /etc/shadow | awk '{print $3}'))
+
+    # echo "$permission" "$owner"
+    # permission 값
+    permission_value=($(get_permission_result "${permission}"))
+
+    # echo "${permission_valu}"
+    detail+=("Permission")
+    # permission_value 값이 400 보다 크면?
+    if ! [[ ${permission_value} -le 400 ]]; then
+        detail+=("취약")
+        detail+=("/etc/shadow 퍼미션 점검")
+    else
+        detail+=("양호")
+        detail+=("-")
+    fi
+
+    detail+=("Owner")
+    # owner 가 root가 아니면
+    if [ ${owner} != "root" ]; then
+        detail+=("취약")
+        detail+=("/etc/shadow 소유자 점검")
+    else
+        detail+=("양호")
+        detail+=("-")
+    fi
+
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    result_print "U_08" "$desc" "$total_result" "${detail[@]}"
+}
 
 server()
 {
@@ -561,8 +694,8 @@ main()
     echo
     #####검사 함수 실행####################
     
-    # U_50; U_51; U_52; U_53; U_54
-    U_05; U_06 #; U_07; U_08 정재호
+    U_50 #; U_51; U_52; U_53; U_54
+    U_05; U_06; U_07; U_08 # 정재호
     
     # U_09; U_10; U_11; U_12; U_13; U_14; U_15; U_17 # 장진영씨
     
