@@ -232,6 +232,26 @@ get_permission_result()
     echo ${result}
 }
 
+is_on_service() {
+    service_name=$1
+    if systemctl is-active --quiet "$service_name"; then
+        echo "active"
+    else
+        echo "inactive"
+    fi
+}
+
+# 서비스의 부팅 시 시작 설정 확인 함수
+is_service_enabled() {
+    service_name=$1
+    if systemctl is-enabled --quiet "$service_name"; then
+        echo "enabled"
+    else
+        echo "disabled"
+    fi
+}
+
+
 #############################################################################################
 U_09()
 {
@@ -1427,6 +1447,147 @@ U_16()
         result_print "U_16" "$desc" "$total_result" "${detail[@]}"
     fi
 }
+
+U_26()
+{
+    local output_mode=$1
+    desc="automountd 서비스 데몬의 실행 여부 점검"
+    detail=()
+    total_result="양호"
+
+    automount=$(is_on_service automount)
+    autofs=$(is_on_service autofs)
+
+    if [[ "$automount" == "inactive" && "$autofs" == "inactive" ]]; then
+        
+        detail+=("automount"); detail+=("양호"); detail+=("-")
+        detail+=("autofs"); detail+=("양호"); detail+=("-")
+        if [[ "$output_mode" == "all" ]]; then
+            result_print "U_26" "$desc" "$total_result" "${detail[@]}"
+        elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+            result_print "U_26" "$desc" "$total_result" "${detail[@]}"
+        fi
+        return
+
+        else
+        
+        detail+=("automount"); detail+=("취약"); detail+=("$automount")
+        detail+=("autofs"); detail+=("취약"); detail+=("$autofs")
+
+        total_result="취약"
+        if [[ "$output_mode" == "all" ]]; then
+            result_print "U_26" "$desc" "$total_result" "${detail[@]}"
+        elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+            result_print "U_26" "$desc" "$total_result" "${detail[@]}"
+        fi
+        
+        # 추가 점검 사항
+        # U_00
+    fi
+}
+
+U_27()
+{
+    local output_mode=$1
+    desc="불필요한 RPC 서비스의 실행 여부 점검"
+    detail=()
+    total_result="양호"
+
+    conf_dir=$(find / -name "inetd.*" 2>/dev/null)
+
+    if [[ "$conf_dir" == "" ]]; then
+        
+        detail+=("No RPC Service"); detail+=("양호"); detail+=("-")
+        if [[ "$output_mode" == "all" ]]; then
+            result_print "U_27" "$desc" "$total_result" "${detail[@]}"
+        elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+            result_print "U_27" "$desc" "$total_result" "${detail[@]}"
+        fi
+        
+        return
+
+        else
+        
+        detail+=("No RPC Service"); detail+=("취약"); detail+=("/etc/inetd.conf 을 점검하십시오.")
+        total_result="취약"
+        if [[ "$output_mode" == "all" ]]; then
+            result_print "U_27" "$desc" "$total_result" "${detail[@]}"
+        elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+            result_print "U_27" "$desc" "$total_result" "${detail[@]}"
+        fi
+        # 추가 점검 사항
+        # U_00
+    fi
+}
+
+U_28()
+{
+    local output_mode=$1
+    desc="안전하지 않은 NIS 서비스의 비활성화, 안전한 NIS+ 서비스의 활성화 여부 점검"
+    detail=()
+    total_result="양호"
+
+    nis_services=("ypserv" "ypbind" "yppasswdd" "ypxfrd" "rpc.yppasswdd")
+
+    nis_active=0
+    for service in "${nis_services[@]}"; do
+        status=$(is_on_service "$service")
+        if [ "$status" = "active" ]; then
+            detail+=("$service")
+            detail+=("취약")
+            detail+=("비활성화가 필요합니다.")
+        #    echo "안전하지 않은 NIS 서비스 '$service'가 활성화되어 있습니다. 비활성화가 필요합니다."
+            nis_active=1
+        fi
+    done
+
+    if [ $nis_active -eq 0 ]; then
+        detail+=("NIS 서비스")
+        detail+=("양호")
+        detail+=("-")
+        # echo "모든 안전하지 않은 NIS 서비스가 비활성화되어 있습니다."
+    fi
+
+    # NIS+ 서비스 확인 (안전함)
+    nisplus_service="nisplus"
+
+    nisplus_status=$(is_on_service "$nisplus_service" 2>/dev/null)
+    nisplus_enabled=$(is_service_enabled "$nisplus_service" 2>/dev/null)
+
+    if [ "$nisplus_status" = "active" ]; then
+        detail+=("NIS+")
+        detail+=("양호")
+        detail+=("-")
+        # echo "안전한 NIS+ 서비스 '$nisplus_service'가 활성화되어 있습니다."
+    else
+        detail+=("NIS+")
+        detail+=("취약")
+        detail+=("활성화 필요")
+        # echo "안전한 NIS+ 서비스 '$nisplus_service'가 활성화되어 있지 않습니다."
+    fi
+
+    if [ "$nisplus_enabled" = "enabled" ]; then
+        detail+=("NIS+ 부팅 설정")
+        detail+=("양호")
+        detail+=("-")
+        # echo "안전한 NIS+ 서비스 '$nisplus_service'가 부팅 시 시작되도록 설정되어 있습니다."
+    else
+        detail+=("NIS+ 부팅 설정")
+        detail+=("취약")
+        detail+=("부팅 시 시작되지 않도록 설정되어 있습니다.")
+        # echo "안전한 NIS+ 서비스 '$nisplus_service'가 부팅 시 시작되지 않도록 설정되어 있습니다."
+    fi
+
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+    
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_28" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_28" "$desc" "$total_result" "${detail[@]}"
+    fi
+}
 #############################################################################################
 U_18()
 {
@@ -2033,7 +2194,7 @@ U_44()
     
 }
 
-U_45() # 취약한 사항이 있는데 최종 결과에는 양호로 출력된다. 수정이 필요
+U_45() 
 {
     local output_mode=$1
     desc="root 계정 su 제한"
@@ -2048,6 +2209,7 @@ U_45() # 취약한 사항이 있는데 최종 결과에는 양호로 출력된�
         wheel_g_result="wheel 그룹이 존재합니다."
     fi
 
+    su_p=""
     sp="su 명령어 권한"
     su_path=$(command -v su)  # su 명령어의 경로 확인
     if [ -z "$su_path" ]; then
@@ -2085,11 +2247,16 @@ U_45() # 취약한 사항이 있는데 최종 결과에는 양호로 출력된�
         wheel_m_result="wheel 그룹이 없으므로 확인할 수 없습니다."
     fi
     
+    if [ "$wheel_g" = "취약" ] || [ "$su_p" = "취약" ] || [ "$wheel_m" = "취약" ]; then
+            total_sourlt="취약"
+    else
+            total_sourlt="양호"
+    fi
 
     if [[ "$output_mode" == "all" ]]; then
-        result_print "U_45" "$desc" "$detail_1" "$wg" "$wheel_g" "$wheel_g_result" "$sp" "$su_p" "$su_p_result" "$wm" "$wheel_m" "$wheel_m_result"
+        result_print "U_45" "$desc" "$total_sourlt" "$wg" "$wheel_g" "$wheel_g_result" "$sp" "$su_p" "$su_p_result" "$wm" "$wheel_m" "$wheel_m_result"
     elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
-        result_print "U_45" "$desc" "$detail_1" "$wg" "$wheel_g" "$wheel_g_result" "$sp" "$su_p" "$su_p_result" "$wm" "$wheel_m" "$wheel_m_result"
+        result_print "U_45" "$desc" "$total_sourlt" "$wg" "$wheel_g" "$wheel_g_result" "$sp" "$su_p" "$su_p_result" "$wm" "$wheel_m" "$wheel_m_result"
     fi
 }
 
@@ -2209,6 +2376,1015 @@ U_49()
 
 #############################################################################################
 
+U_35()
+{
+    local output_mode=$1
+    # 변수 선언
+    desc="웹서비스 디렉터리 리스팅 제거"
+    detail=()
+    total_result="양호"
+
+    detail+=("디렉터리 검색 기능 사용 여부")
+
+    # Apache 설정 파일에서 'Options Indexes'가 있는지 확인
+    if grep -q "Options Indexes" /etc/httpd/conf/httpd.conf; then
+        detail+=("취약")
+        detail+=("디렉터리 검색 기능 제거 필요")
+    else
+        detail+=("양호")
+        detail+=("-")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 결과 출력
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_35" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_35" "$desc" "$total_result" "${detail[@]}"
+    fi
+}
+
+U_36()
+{
+    # 변수 선언
+    local output_mode=$1
+    desc="웹서비스 웹 프로세스 권한 제한"
+    detail=()
+    total_result="양호"
+
+    detail+=("Apache 데몬 root 권한으로 구동 여부")
+
+    # Apache 데몬이 root 권한으로 실행되고 있는지 확인
+    if ps aux | grep '[h]ttpd' | awk '{print $1}' | grep -q "root"; then
+        detail+=("취약")
+        detail+=("Apache 데몬을 root가 아닌 별도 계정으로 구동")
+    else
+        detail+=("양호")
+        detail+=("-")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 결과 출력
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_36" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_36" "$desc" "$total_result" "${detail[@]}"
+    fi
+}
+U_37()
+{
+    # 변수 선언
+    local output_mode=$1
+    desc="웹서비스 상위 디렉터리 접근 금지"
+    detail=()
+    total_result="양호"
+
+    detail+=("상위 디렉터리에 이동제한 설정 여부")
+
+    # Apache 설정에서 상위 디렉터리 접근 금지 설정 확인 (예: 'AllowOverride None' 또는 'Options -Indexes' 확인)
+    if grep -q "AllowOverride None" /etc/httpd/conf/httpd.conf || grep -q "Options -Indexes" /etc/httpd/conf/httpd.conf; then
+        detail+=("양호")
+        detail+=("-")
+    else
+        detail+=("취약")
+        detail+=("상위 디렉터리 접근을 제한하기 위해 'AllowOverride None' 설정하십시오.")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 결과 출력
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_37" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_37" "$desc" "$total_result" "${detail[@]}"
+    fi
+    
+}
+
+U_38()
+{
+    # 변수 선언
+    local output_mode=$1
+    desc="웹서비스 불필요한 파일 제거"
+    detail=()
+    total_result="양호"
+
+    detail+=("불필요한 파일 유무")
+
+    # 불필요한 파일 점검 (예: Apache 설치 시 기본 제공되는 예제 파일)
+    if find /var/www/html -type f \( -name "manual" -o -name "test.php" -o -name "*.bak" \) | grep -q .; then
+        detail+=("취약")
+        detail+=("불필요한 파일 및 디렉터리 제거")
+    else
+        detail+=("양호")
+        detail+=("-")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 결과 출력
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_38" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_38" "$desc" "$total_result" "${detail[@]}"
+    fi
+    
+}
+
+U_39()
+{
+    # 변수 선언
+    local output_mode=$1
+    desc="웹서비스 링크 사용금지"
+    detail=()
+    total_result="양호"
+    detail+=("심볼릭 링크, aliases 사용 제한 여부")
+
+    # Apache 설정에서 심볼릭 링크 및 aliases 사용 여부 확인
+    # 'Options -FollowSymLinks' 및 'Options -Indexes' 확인
+    if grep -q "Options -FollowSymLinks" /etc/httpd/conf/httpd.conf || grep -q "Options -Indexes" /etc/httpd/conf/httpd.conf; then
+        detail+=("양호")
+        detail+=("-")
+    else
+        detail+=("취약")
+        detail+=("심볼릭 링크 및 aliases 사용 제한")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 결과 출력
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_39" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_39" "$desc" "$total_result" "${detail[@]}"
+    fi
+    
+}
+
+U_40() {
+    # 변수 선언
+    local output_mode=$1
+    desc="웹서비스 파일 업로드 및 다운로드 제한"
+    detail=()
+    total_result="양호"
+
+    detail+=("파일 업로드 및 다운로드 제한 여부")
+
+    # 웹 서버 설정 파일 경로 (Nginx나 Apache 서버에 맞게 설정 파일 경로 수정)
+    apache_conf_file="/etc/httpd/conf/httpd.conf"
+    nginx_conf_file="/etc/nginx/nginx.conf"
+
+    if [ -f "$apache_conf_file" ]; then
+        # Apache 웹 서버의 경우 파일 업로드 및 다운로드 제한 설정 확인
+        upload_limit_check=$(grep -i "LimitRequestBody" "$apache_conf_file")
+        if [ -n "$upload_limit_check" ]; then
+            detail+=("양호")
+            detail+=("-")
+        else
+            detail+=("취약")
+            detail+=("파일 업로드 및 다운로드 용량 제한, 파일 사이즈 용량 제한 설정 필요 (Apache)")
+        fi
+
+    elif [ -f "$nginx_conf_file" ]; then
+        # Nginx 웹 서버의 경우 파일 업로드 및 다운로드 제한 설정 확인
+        upload_limit_check=$(grep -i "client_max_body_size" "$nginx_conf_file")
+        if [ -n "$upload_limit_check" ]; then
+            detail+=("양호")
+            detail+=("-")
+        else
+            detail+=("취약")
+            detail+=("파일 업로드 및 다운로드 용량 제한, 파일 사이즈 용량 제한 설정 필요 (Nginx)")
+        fi
+
+    else
+        # 웹 서버 설정 파일이 없는 경우
+        detail+=("취약")
+        detail+=("웹 서버 설정 파일을 찾을 수 없습니다. 파일 업로드 및 다운로드 제한 설정 필요")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_40" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_40" "$desc" "$total_result" "${detail[@]}"
+    fi
+    
+}
+
+U_41() {
+    # 변수 선언
+    local output_mode=$1
+    desc="웹서비스 영역의 분리"
+    detail=()
+    total_result="양호"
+
+    detail+=("DocumentRoot 디렉터리 경로")
+
+    # Apache 또는 Nginx 웹 서버 설정 파일 확인
+    apache_conf_file="/etc/httpd/conf/httpd.conf"
+    nginx_conf_file="/etc/nginx/nginx.conf"
+
+    # 기본 웹 루트 경로들 (잘못된 경로의 예시)
+    default_roots=("/usr/local/apache/htdocs" "/usr/local/apache2/htdocs" "/var/www/html")
+
+    if [ -f "$apache_conf_file" ]; then
+        # Apache 서버에서 DocumentRoot 확인
+        document_root=$(grep -i "DocumentRoot" "$apache_conf_file" | awk '{print $2}')
+    elif [ -f "$nginx_conf_file" ]; then
+        # Nginx 서버에서 root 디렉터리 확인
+        document_root=$(grep -i "root" "$nginx_conf_file" | awk '{print $2}')
+    else
+        # 설정 파일이 없을 때
+        detail+=("취약")
+        detail+=("웹 서버 설정 파일을 찾을 수 없습니다.")
+    fi
+
+    # DocumentRoot 경로가 시스템 중요 디렉터리가 아닌지 확인
+    if [[ " ${default_roots[@]} " =~ " ${document_root} " ]]; then
+        detail+=("취약")
+        detail+=("DocumentRoot가 기본 경로에 설정되어 있습니다. 시스템 중요 디렉터리 외의 경로에 웹서비스를 설치하세>요.")
+    elif [ -n "$document_root" ]; then
+        detail+=("양호")
+        detail+=("-")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_41" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_41" "$desc" "$total_result" "${detail[@]}"
+    fi
+    
+}
+
+U_29()
+{
+    local output_mode=$1
+    code="U_29"
+
+    # 점검 코드 실행
+    check=`cat -al /etc/inetd.conf 2>/dev/null | grep "tftp|talk|ntalk | '{print $1}'"`
+
+    if [[ "$check" == "" ]]; then
+        result="파일 없음"
+        order="-"
+    elif [[ "$check" == "#" ]]; then
+        result="양호"
+        order="-"
+    else
+        result="취약"
+        order="tftp, talk, ntalk 주석 처리 필요"
+    fi
+
+    # 결과값 변수에 저장 ()
+    desc="tftp, talk 서비스 비활성화"
+    total_result=$result
+    detail_1="/etc/inetd.conf"
+    detail_1_result=$result
+    detail_1_order=$order
+
+
+    # 함수 실행 예시
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order"
+    fi
+}
+
+U_30()
+{
+    local output_mode=$1
+    code="U_30"
+
+    # 점검 코드 실행
+    check=`ps -ef | grep sendmail`
+
+    if [[ "$check" == "" ]]; then
+        result="양호"
+        order="-"
+    else
+        result="취약"
+        order="Sendmail 서비스 점검 필요"
+    fi
+
+    # 결과값 변수에 저장 ()
+    desc="Sendmail 버전 점검"
+    total_result=$result
+    detail_1="Sendmail 서비스"
+    detail_1_result=$result
+    detail_1_order=$order
+
+
+    # 함수 실행 예시
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order"
+    fi
+}
+
+U_31()
+{
+    local output_mode=$1
+    code="U_31"
+
+    # 점검 코드 실행
+    check1=`ps -ef | grep sendmail | grep -v "grep" 2>/dev/null`
+    check2=`cat /etc/mail/sendmail.cf 2>/dev/null| grep "R$\*" | grep "Relaying denied"`
+
+    if [[ "$check1" == "" ]]; then
+        result1="양호"
+        order1="-"
+    else
+        result1="취약"
+        order1="SMTP 서비스 사용중"
+    fi
+
+    if [[ "$check2" == "" ]]; then
+        result2="양호"
+        order1="-"
+    else
+        result2="취약"
+        order2="설정 필요"
+    fi
+
+    if [[ "$result1" == "취약" || "$result2" == "취약" ]]; then
+        result="취약"
+    else
+        result="양호"
+    fi
+
+    # 결과값 변수에 저장 ()
+    desc="스팸 메일 릴레이 제한"
+    total_result=$result
+    detail_1="STMP 서비스 유무"
+    detail_1_result=$result1
+    detail_1_order=$order1
+    detail_2="릴레이 방지 설정"
+    detail_2_result=$result2
+    detail_2_order=$order2
+
+    # 함수 실행 예시
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order" "$detail_2" "$detail_2_result" "$detail_2_order"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order" "$detail_2" "$detail_2_result" "$detail_2_order"
+    fi
+}
+
+U_32()
+{
+    local output_mode=$1
+    code="U_32"
+
+    # 점검 코드 실행
+    check1=`ps -ef | grep sendmail | grep -v "grep" 2>/dev/null`
+    check2=`grep -v '^ *#' /etc/mail/sendamil.cf 2>/dev/null | grep PrivacyOptions`
+
+    if [[ "$check1" == "" ]]; then
+        result1="양호"
+        order1="-"
+    else
+        result1="취약"
+        order1="SMTP 서비스 사용중"
+    fi
+
+    if [[ "$check2" == "" ]]; then
+        result2="양호"
+        order1="-"
+    else
+        result2="취약"
+        order2="일반 사용자의 Sendmail 실행 방시 설정 필요"
+    fi
+
+    if [[ "$result1" == "취약" || "$result2" == "취약" ]]; then
+        result="취약"
+    else
+        result="양호"
+    fi
+
+    # 결과값 변수에 저장 ()
+    desc="일반사용자의 Sendmail 실행 방지"
+    total_result=$result
+    detail_1="STMP 서비스 유무"
+    detail_1_result=$result1
+    detail_1_order=$order1
+    detail_2="일반사용자의 Sendmail 실행 방지"
+    detail_2_result=$result2
+    detail_2_order=$order2
+
+    # 함수 실행 예시
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order" "$detail_2" "$detail_2_result" "$detail_2_order"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order" "$detail_2" "$detail_2_result" "$detail_2_order"
+    fi
+}
+
+U_33()
+{
+    local output_mode=$1
+    code="U_33"
+
+    # 점검 코드 실행
+    check=`named -v 2>/dev/null`
+
+    if [[ "$check" == "" ]]; then
+        result="양호"
+        order="-"
+        detail_1="DNS 서비스 사용X"
+    else
+        detail_1="DNS 서비스 사용중"
+        result="취약"
+        order="DNS 보안 버전 패치 필요"
+    fi
+
+    # 결과값 변수에 저장 ()
+    total_result=$result
+    detail_1="Sendmail 서비스"
+    detail_1_result=$result
+    detail_1_order=$order
+
+
+    # 함수 실행 예시
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order"
+    fi
+}
+
+U_34()
+{
+    local output_mode=$1
+    code="U_34"
+
+    # 점검 코드 실행
+    check=`cat /etc/named.conf 2>/dev/null | grep 'allow-transfer'`
+
+    if [[ "$check" == "" ]]; then
+        result="양호"
+        order="-"
+    else
+        result="취약"
+        order="허가된 사용자에게만 허용 설정 필요"
+    fi
+
+    # 결과값 변수에 저장 ()
+    total_result=$result
+    desc="DNS Zone Transfer 설정"
+    detail_1="DNS Zone Transfer"
+    detail_1_result=$result
+    detail_1_order=$order
+
+
+    # 함수 실행 예시
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "$code" "$desc" "$total_result" "$detail_1" "$detail_1_result" "$detail_1_order"
+    fi
+}
+
+U_60()
+{
+    # 변수 선언
+    local output_mode=$1
+    desc="ssh 원격접속 허용"
+    detail=()
+    total_result="양호"
+
+    ssh=$(is_on_service sshd)
+
+    if [[ "$ssh" == "inactive" ]]; then
+        detail+=("ssh 접속 허용")
+        detail+=("취약")
+        detail+=("필요 시 접속 허용")
+    else
+        detail+=("ssh 접속 허용")
+        detail+=("양호")
+        detail+=("필요 시 접속 허용")
+
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_60" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_60" "$desc" "$total_result" "${detail[@]}"
+    fi
+}
+
+U_62()
+{
+    # 변수 선언
+    local output_mode=$1
+    desc="ftp 계정 쉘 점검"
+    detail=()
+    total_result="양호"
+
+
+    if grep -q '^ftp:.*:/bin/false$' /etc/passwd; then
+        detail+=("ftp 사용자 shell 점검")
+        detail+=("양호")
+        detail+=("-")
+    else
+        detail+=("ftp 사용자 shell 점검")
+        detail+=("취약")
+        detail+=("/bin/false 로 수정 필요")
+    fi
+
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_62" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_62" "$desc" "$total_result" "${detail[@]}"
+    fi
+}
+
+U_69(){
+local output_mode=$1
+desc="NFS 설정파일 접근권한"
+nfs_path="/etc/exports"
+
+if [ ! -f "$nfs_path" ]; then
+    detail_1_resoult="취약"
+    detail_1_order="NFS 접근제어 파일이 존재하지 않습니다."
+else
+    su_mode=$(stat -c "%a" "$nfs_path")
+    if [ "$su_mode" -eq 644 ]; then
+        detail_1_resoult="양호"
+        detail_1_order="NFS 설정 파일의 권한이 644로 설정되어 있습니다."
+    else
+        detail_1_resoult="취약"
+        detail_1_order="NFS 설정 파일의 권한이 644가 아닙니다 (현재 권한: $su_mode)."
+    fi
+fi
+
+
+if [[ "$output_mode" == "all" ]]; then
+        result_print "U_69" "$desc" "$detail_1_resoult" "$desc" "$detail_1_resoult" "$detail_1_order"
+    elif [[ "$output_mode" == "vulnerable" && "$detail_1_resoult" == "취약" ]]; then
+        result_print "U_69" "$desc" "$detail_1_resoult" "$desc" "$detail_1_resoult" "$detail_1_order"
+    fi
+}
+
+
+U_70(){
+    local output_mode=$1
+    desc="expn,vrfy 명령어 제한"
+
+    smtp_service="postfix"  # 사용하는 SMTP 서비스에 따라 변경
+    config_file="/etc/postfix/main.cf"  # 설정 파일 경로
+
+    # SMTP 서비스 설치 여부 확인
+    if ! systemctl status $smtp_service &>/dev/null; then
+        detail_1_resoult="취약"
+        detail_1_order="$smtp_service 서비스가 설치,실행되고 있지 않습니다."
+    else
+        detail_1_resoult="양호"
+        detail_1_order="-"
+fi
+        # noexpn 옵션 확인
+        noexpn=$(grep -E "noexpn" $config_file 2>/dev/null)
+        if [[ -z $noexpn ]]; then
+            detail_2_resoult="취약"
+            detail_2_order="noexpn 설정이 없습니다"
+        else
+            detail_2_resoult="양호"
+            detail_2_order="-"
+        fi
+
+        # novrfy 옵션 확인
+        novrfy=$(grep -E "novrfy" $config_file 2>/dev/null)
+        if [[ -z $novrfy ]]; then
+            detail_3_resoult="취약"
+            detail_3_order="novrfy 설정이 없습니다"
+        else
+            detail_3_resoult="양호"
+            detail_3_order="-"
+        fi
+
+        # goaway 옵션 확인
+        goaway=$(grep -E "goaway" $config_file 2>/dev/null)
+        if [[ -z $goaway ]]; then
+            detail_4_resoult="취약"
+            detail_4_order="goaway 설정이 없습니다"
+        else
+            detail_4_resoult="양호"
+            detail_4_order="-"
+        fi
+
+
+    # 결과 출력
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_70" "$desc" "$detail_1_resoult" "$desc" "$detail_1_resoult" "$detail_1_order" \
+        "$desc" "$detail_2_resoult" "$detail_2_order" \
+        "$desc" "$detail_3_resoult" "$detail_3_order" \
+        "$desc" "$detail_4_resoult" "$detail_4_order"
+    elif [[ "$output_mode" == "vulnerable" && "$detail_1_resoult" == "취약" ]]; then
+        result_print "U_70" "$desc" "$detail_1_resoult" "$desc" "$detail_1_resoult" "$detail_1_order" \
+        "$desc" "$detail_2_resoult" "$detail_2_order" \
+        "$desc" "$detail_3_resoult" "$detail_3_order" \
+        "$desc" "$detail_4_resoult" "$detail_4_order"
+    fi
+    
+}
+
+
+U_71(){
+    local output_mode=$1
+desc="Apache 웹 서비스 정보 숨김 "
+apache=`cat /etc/httpd/conf/httpd.conf | grep -e "ServerTokens" | awk '{print $2}'`
+apache2=`cat /etc/httpd/conf/httpd.conf | grep -e "ServerSignature" | awk '{print $2}'`
+
+
+if [ -z "$apache" ]; then
+        detail_1_resoult="취약"
+        detail_1_order="ServerTokens 설정이 없습니다"
+
+elif  [ "$apache" != "Prod" ]; then
+        detail_1_resoult="취약"
+        detail_1_order="ServerTokens 설정되어 있지 않음"
+else
+        detail_1_resoult="양호"
+        detail_1_order="-"
+fi
+
+if [ -z "$apache2" ]; then
+        detail_2_resoult="취약"
+        detail_2_order="ServerSignature 설정이 없습니다"
+
+elif  [ "$apache" != "off" ]; then
+        detail_2_resoult="취약"
+        detail_2_order="ServerSingnature 설정되어 있지 않음"
+else
+        detail_2_resoult="양호"
+        detail_2_order="-"
+fi
+
+
+
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_71" "$desc" "$detail_1_resoult" "$desc" "$detail_1_resoult" "$detail_1_order" "$desc" "$detail_2_resoult" "$detail_2_order"
+    elif [[ "$output_mode" == "vulnerable" && "$detail_1_resoult" == "취약" ]]; then
+        result_print "U_71" "$desc" "$detail_1_resoult" "$desc" "$detail_1_resoult" "$detail_1_order" "$desc" "$detail_2_resoult" "$detail_2_order"
+    fi
+}
+
+U_64() {
+    # 변수 선언
+    local output_mode=$1
+    desc="ftpusers 파일 설정(FTP 서비스 root 계정 접근제한)"
+    detail=()
+    total_result="양호"
+
+    detail+=("FTP 서비스 활성화 여부 및 root 계정 포함 여부")
+
+    # FTP 서비스 활성화 여부 확인 (FTP 서비스가 활성화된 경우만 체크)
+    if systemctl is-active --quiet vsftpd || systemctl is-active --quiet proftpd || systemctl is-active --quiet ftp; then
+        # ftpusers 파일 경로 확인 (vsftpd, proftpd 등 사용 서비스에 따라 경로가 다를 수 있음)
+        ftpusers_file="/etc/ftpusers"
+
+        if [ -f "$ftpusers_file" ]; then
+            # root 계정이 ftpusers 파일에 포함되어 있는지 확인
+            if grep -q "^root" "$ftpusers_file"; then
+                detail+=("양호")
+                detail+=("-")
+            else
+                detail+=("취약")
+                detail+=("FTP 접속 시 root 계정으로 직접 접속 할 수 없도록 설정파일 수정 (접속 차단 계정을 등록하는 ftpusers 파일에 root 계정 추가)")
+            fi
+        else
+            detail+=("취약")
+            detail+=("ftpusers 파일이 존재하지 않음")
+        fi
+    else
+        detail+=("취약")
+        detail+=("FTP 서비스가 활성화되지 않음")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 함수 실행 예시
+    
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_64" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_64" "$desc" "$total_result" "${detail[@]}"
+    fi
+}
+
+U_66() {
+    # 변수 선언
+    local output_mode=$1
+    desc="SNMP 서비스 구동 점검"
+    detail=()
+    total_result="양호"
+
+    detail+=("SNMP 서비스 사용 여부")
+
+    # SNMP 서비스 상태 확인
+    if systemctl is-active --quiet snmpd; then
+        detail+=("양호")
+        detail+=("-")
+    else
+        detail+=("취약")
+        detail+=("SNMP 서비스를 사용하지 않는 경우 서비스 중지 후 시작 스크립트 변경")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 함수 실행 예시
+    
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_66" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_66" "$desc" "$total_result" "${detail[@]}"
+    fi
+}
+
+U_61() {
+    local output_mode=$1
+
+    # 변수 선언
+    desc="FTP 서비스 확인"
+    detail=()
+    total_result="양호"
+
+    detail+=("FTP 서비스 활성화 여부")
+
+    # FTP 서비스 확인 (vsftpd 혹은 FTP 관련 서비스 확인)
+    ftp_service=$(systemctl is-active vsftpd 2>/dev/null || systemctl is-active ftp 2>/dev/null)
+
+    if [[ "$ftp_service" == "inactive" || "$ftp_service" == "unknown" ]]; then
+        # FTP 서비스가 활성화되지 않았을 때
+        detail+=("양호")
+        detail+=("-")
+    else
+        # FTP 서비스가 활성화되어 있을 때
+        detail+=("취약")
+        detail+=("FTP 서비스를 비활성화하거나 필요 시 다른 보안된 전송 방법을 사용")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 함수 실행 예시
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_61" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_61" "$desc" "$total_result" "${detail[@]}"
+    fi
+
+}
+
+U_63() {
+    local output_mode=$1
+
+    # 변수 선언
+    desc="ftpusers 파일 소유자 및 권한 설정"
+    detail=()
+    total_result="양호"
+
+    detail+=("ftpusers 파일 소유자 및 권한 상태")
+
+    # 파일 경로 (주로 /etc/ftpusers 혹은 /etc/vsftpd/ftpusers)
+    ftpusers_file="/etc/ftpusers"
+
+    if [ -e "$ftpusers_file" ]; then
+        # 파일 소유자 확인
+        owner=$(stat -c '%U' "$ftpusers_file")
+        # 파일 권한 확인
+        permissions=$(stat -c '%a' "$ftpusers_file")
+
+        # 소유자가 root이고 권한이 640 이하인지 확인
+        if [[ "$owner" == "root" && "$permissions" -le 640 ]]; then
+            detail+=("양호")
+            detail+=("-")
+        else
+            detail+=("취약")
+            detail+=("FTP 접근제어 파일의 소유자 및 권한 변경 (소유자 root, 권한 640 이하)")
+        fi
+    else
+        detail+=("취약")
+        detail+=("ftpusers 파일이 존재하지 않음. 파일을 생성하고 소유자와 권한을 설정하세요.")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 결과 출력
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_63" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_63" "$desc" "$total_result" "${detail[@]}"
+    fi
+}
+
+U_65() {
+    local output_mode=$1
+
+    # 변수 선언
+    desc="at 서비스 권한 설정"
+    detail=()
+    total_result="양호"
+
+    detail+=("at 명령어 일반 사용자 사용 여부 및 at 관련 파일 640 이하인지")
+
+    # 관련 파일들
+    at_allow_file="/etc/at.allow"
+    at_deny_file="/etc/at.deny"
+
+    # at.allow 파일이 존재하고, 권한이 올바른지 확인
+    if [ -e "$at_allow_file" ]; then
+        allow_owner=$(stat -c '%U' "$at_allow_file")
+        allow_permissions=$(stat -c '%a' "$at_allow_file")
+
+        if [[ "$allow_owner" != "root" || "$allow_permissions" -gt 640 ]]; then
+            detail+=("취약")
+            detail+=("at.allow 파일의 소유자 및 권한 변경 (소유자 root, 권한 640 이하)")
+        fi
+    fi
+
+    # at.deny 파일이 존재하고, 권한이 올바른지 확인
+    if [ -e "$at_deny_file" ]; then
+        deny_owner=$(stat -c '%U' "$at_deny_file")
+        deny_permissions=$(stat -c '%a' "$at_deny_file")
+
+        if [[ "$deny_owner" != "root" || "$deny_permissions" -gt 640 ]]; then
+            detail+=("취약")
+            detail+=("at.deny 파일의 소유자 및 권한 변경 (소유자 root, 권한 640 이하)")
+        fi
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    else
+        detail+=("양호")
+        detail+=("-")
+    fi
+
+    # 결과 출력
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_65" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_65" "$desc" "$total_result" "${detail[@]}"
+    fi
+}
+
+U_67() {
+    local output_mode=$1
+
+    # 변수 선언
+    desc="SNMP 서비스 Community String의 복잡성 설정"
+    detail=()
+    total_result="양호"
+
+    detail+=("SNMP Community 이름이 public, private 설정")
+
+    # snmpd.conf 파일 위치
+    snmp_conf_file="/etc/snmp/snmpd.conf"
+
+    # 커뮤니티 이름 확인 (public/private 여부)
+    if grep -qE "community\s+(public|private)" "$snmp_conf_file"  2>/dev/null; then
+        detail+=("취약")
+        detail+=("snmpd.conf 파일에서 커뮤니티명을 확인한 후 디폴트 커뮤니티명인 “public, private”을 추측하기 어려운 커뮤니티명으로 변경")
+    else
+        detail+=("양호")
+        detail+=("-")
+    fi
+
+    # 최종 취약 여부 확인
+    if is_in_array "취약" "${detail[@]}"; then
+        total_result="취약"
+    fi
+
+    # 결과 출력
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_67" "$desc" "$total_result" "${detail[@]}"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_67" "$desc" "$total_result" "${detail[@]}"
+    fi
+}
+
+U_68(){
+    local output_mode=$1
+    desc="로그온 시 경고 메시지"
+    wirnig="WARNING: UNAUTHORIZED ACCESS TO THIS SYSTEM IS PROHIBITED"
+    motd=`cat /etc/motd`
+    detail_order="경고메시지가 없습니다"
+    if [ "$motd" != "$wirnig" ]; then
+        total="취약"
+    else
+        total1="양호"
+    fi
+
+    # FTP 배너 확인
+    ftp=$(grep "$waring" /etc/vsftpd/vsftpd.conf 2>/dev/null )
+    detail_3="FTP 배너 메시지"
+if [ -z "$ftp" ]; then
+        total2="취약"
+        detail_order="파일이 없습니다"
+
+   elif [ "$ftp" != "$warning" ]; then
+        total2="취약"
+        detail_order="경고메시지가 없습니다"
+    
+else
+        total2="양호"
+
+    fi
+
+    # SMTP 배너 확인
+    smtp=$(grep "$waring" /etc/mail/sendmail.cf  2>/dev/null)
+    detail_4="SMTP 배너 메시지"
+if [ -z "$smtp" ]; then
+        total3="취약"
+        detail_order="파일이 없습니다"
+
+    elif [ "$smtp" != "\"$warning\"" ]; then
+        total3="취약"
+         detail_order="경고메시지가 없습니다"
+
+    else
+        total3="양호"
+
+    fi
+
+    # DNS 배너 확인
+    dns=$(grep "$warning" /etc/named.conf 2>/dev/null)
+    detail_5="DNS 배너 메시지"
+if [ -z "$dns" ]; then
+        total4="취약"
+        detail_order="파일이 없습니다"
+
+
+    elif [ -z "$dns" ]; then
+        total4="취약"
+        detail_order="경고메시지가 없습니다"
+
+    else
+        total4="양호"
+
+    fi
+
+    if [[ "$output_mode" == "all" ]]; then
+        result_print "U_68" "$desc" "$total" "$detail_1" "$total" "$detail_order" "$detail_2"  "$total1" "$detail_order" "$detail_3"  "$total2" "$detail_order" "$detail_4" "$total3" "$detail_order" "$detail_5" "$total4" "$detail_order"
+    elif [[ "$output_mode" == "vulnerable" && "$total_result" == "취약" ]]; then
+        result_print "U_68" "$desc" "$total" "$detail_1" "$total" "$detail_order" "$detail_2"  "$total1" "$detail_order" "$detail_3"  "$total2" "$detail_order" "$detail_4" "$total3" "$detail_order" "$detail_5" "$total4" "$detail_order"
+    fi
+
+}
+
+#############################################################################################
+
 # 메인 함수
 main() {
     clear
@@ -2306,25 +3482,25 @@ main() {
     echo -e "${green}${plus_line}${reset}\n"
 
     # 점검 함수 실행 (필요한 함수들을 여기에 추가하세요)
-    check_functions=(U_09 U_10 U_11 U_12 U_13 U_14 U_15 U_16 U_17 U_19 U_20 U_21 U_22 U_23 U_24 U_25 U_50 U_51 U_52 U_53 U_54 U_05 U_06 U_07 U_08 U_18 U_55 U_56 U_57 U_58 U_59 U_42 U_43 U_72 U_01 U_02 U_03 U_04 U_44 U_45 U_46 U_47 U_48 U_49)
+    # check_functions=(U_09 U_10 U_11 U_12 U_13 U_14 U_15 U_16 U_17 U_19 U_20 U_21 U_22 U_23 U_24 U_25 U_50 U_51 U_52 U_53 U_54 U_05 U_06 U_07 U_08 U_18 U_55 U_56 U_57 U_58 U_59 U_42 U_43 U_72 U_01 U_02 U_03 U_04 U_44 U_45 U_46 U_47 U_48 U_49 U_35 U_36 U_37 U_38 U_39 U_40 U_41 U_28 U_27 U_26)
 
-    for func in "${check_functions[@]}"; do
-        if declare -f "$func" > /dev/null; then
-            $func "$output_mode"
-        else
-            echo "함수 $func 이(가) 정의되어 있지 않습니다." >&2
-        fi
-    done
-
-    ## 모든 함수를 다 작성하면 위 코드 주석으로 하고 아래 코드를 주석 해제
-    # for num in {1..100}; do
-    #     func="U_$(printf "%02d" "$num")"
+    # for func in "${check_functions[@]}"; do
     #     if declare -f "$func" > /dev/null; then
     #         $func "$output_mode"
     #     else
     #         echo "함수 $func 이(가) 정의되어 있지 않습니다." >&2
     #     fi
     # done
+
+    ## 모든 함수를 다 작성하면 위 코드 주석으로 하고 아래 코드를 주석 해제
+    for num in {1..72}; do
+        func="U_$(printf "%02d" "$num")"
+        if declare -f "$func" > /dev/null; then
+            $func "$output_mode"
+        else
+            echo "함수 $func 이(가) 정의되어 있지 않습니다." >&2
+        fi
+    done
 
     # 시스템 점검 완료 메시지
     echo -e "\n${green}${plus_line}${reset}"
