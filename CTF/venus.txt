@@ -25,6 +25,11 @@ cve
 
 
 <풀이+++++++++++++++++++++++++++++++++++++++++++++++++++>
+
+https://medium.com/@saad_sec/the-planet-venus-7b7e9709c89
+https://medium.com/@mcl0x90/the-planets-venus-vulnhub-write-up-f6727d08bafb
+
+
 다양한 도구를 활용하여 정보 수집
 gobuster dir -u http://192.168.0.106:8080/ -w /usr/share/wordlists/common.txt
 /admin
@@ -71,3 +76,4 @@ make -> makefile 존재
 gcc 컴파일 전 파일명 -o 컴파일 후 파일명
 gcc cve-2021-4034.zip -o 4034
 
+https://github.com/berdav/CVE-2021-4034
