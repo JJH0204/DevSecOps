@@ -75,7 +75,11 @@ result_print() {
         if [[ "$result" == "취약" ]]; then
             item_color="$red"
         fi
-        echo -e "\t${detail}: ${item_color}${result}${reset} (${requirement})"
+        echo -e "\t [+] ${detail}: ${item_color}${result}${reset}"
+        if [[ "$requirement" != "-" ]]; then
+            echo -e "\t\t└(${requirement})"
+        fi
+        echo ""
     done
 
     echo "=========================================================="
