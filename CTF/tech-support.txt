@@ -1,0 +1,12 @@
+힌트 웹사이트 주소
+https://0xnehru.medium.com/tech-supp0rt-1-tryhackme-12aa6f6e2ae5
+
+Tech_Support1 - 다양한 도구를 통해 정보수집
+힌트
+49876.py
+searchsploit -m 경로
+49876.py
+
+wordpress 환경설정파일
+sudo -l
+https://gtfobins.github.io/gtfobins/iconv/
